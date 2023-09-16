@@ -65,7 +65,6 @@ export const scrollAnimation = (position, target, onUpdate) => {
         },
        onUpdate 
     });
-
     tl.to(target, {
         x: -0.55,
         y: 0.32,

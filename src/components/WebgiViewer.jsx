@@ -28,16 +28,39 @@ import { scrollAnimation } from "../lib/scroll-animation";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const WebgiViewer = forwardRef((props, ref) => {
+const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
     const canvasRef = useRef(null);
-    // const [viewerRef, setViewerRef] = useState(null);
-    // const [targetRef, setViewerRef] = useState(null);
-    // const [viewerRef, setViewerRef] = useState(null);
-    // const [viewerRef, setViewerRef] = useState(null);
+    const [viewerRef, setViewerRef] = useState(null);
+    const [targetRef, setTargetRef] = useState(null);
+    const [cameraRef, setCameraRef] = useState(null);
+    const [positionRef, setPositionRef] = useState(null);
+    const canvasContainerRef = useRef(null);
+    const [previewMode, setPreviewMode] = useState(false);
 
     useImperativeHandle(ref, () => ({
         triggerPreview() {
+            setPreviewMode(true);
+            canvasContainerRef.current.style.pointerEvents = "all";
+            props.contentRef.current.style.opacity = "0";
 
+            gsap.to(positionRef, {
+                x: 13.04,
+                y: -2.01,
+                z: 2.29,
+                duration: 2,
+                onUpdate: () => {
+                    viewerRef.setDirty();
+                    cameraRef.positionTargetUpdated(true);
+                }
+            })
+            gsap.to(targetRef, {
+                x: 0.11,
+                y: 0.0,
+                z: 0.0,
+                duration: 2
+            })
+
+            viewerRef.scene.activeCamera.setCameraOptions({ controlsEnabled: true });
         }
     }));
 
@@ -52,7 +75,9 @@ const WebgiViewer = forwardRef((props, ref) => {
     const setupViewer = useCallback(async () => {
         const viewer = new ViewerApp({
             canvas: canvasRef.current,
-        })
+        });
+
+        setViewerRef(viewer);
     
         const manager = await viewer.addPlugin(AssetManagerPlugin)
     
@@ -62,6 +87,10 @@ const WebgiViewer = forwardRef((props, ref) => {
         const camera = viewer.scene.activeCamera;
         const position = camera.position;
         const target = camera.target;
+
+        setCameraRef(camera);
+        setPositionRef(position);
+        setTargetRef(target);
     
         // Add plugins individually.
         await viewer.addPlugin(GBufferPlugin)
@@ -119,9 +148,49 @@ const WebgiViewer = forwardRef((props, ref) => {
         setupViewer();
     }, [])
 
+    const handleExit = useCallback(() => {
+        canvasContainerRef.current.style.pointerEvents = "none"; //CAN move camera
+        props.contentRef.current.style.opacity = "1";
+        viewerRef.scene.activeCamera.setCameraOptions({ controlsEnabled: false });
+        setPreviewMode(false);
+        gsap.to(positionRef, {
+            x: 1.56,
+            y: 5.0,
+            z: 0.01,
+            scrollTrigger: {
+                trigger: '.display-section', // second section triggers animation
+                start: "top bottom", //section, viewport
+                end: "top top", //section, viewport
+                scrub: 2, //true?
+                immediateRender: false, //efficiency
+            },
+            onUpdate: () => {
+                viewerRef.setDirty();
+                cameraRef.positionTargetUpdated(true);
+            }
+        });
+        gsap.to(targetRef, {
+            x: -0.55,
+            y: 0.32,
+            z: 0.0,
+            scrollTrigger: {
+                trigger: '.display-section', // second section triggers animation
+                start: "top bottom", //section, viewport
+                end: "top top", //section, viewport
+                scrub: 2, //true?
+                immediateRender: false, //efficiency
+            },
+        })
+    }, [canvasContainerRef, viewerRef, positionRef, cameraRef, targetRef]);
+
     return (
-        <div id="webgi-canvas-container">
+        <div ref={canvasContainerRef} id="webgi-canvas-container">
             <canvas id="webgi-canvas" ref={canvasRef} />
+            {
+                previewMode && (
+                    <button className="button" onClick={handleExit}>Exit</button>
+                )
+            }
         </div>
     );
 
