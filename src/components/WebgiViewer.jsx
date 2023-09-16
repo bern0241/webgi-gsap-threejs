@@ -36,6 +36,7 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
     const [positionRef, setPositionRef] = useState(null);
     const canvasContainerRef = useRef(null);
     const [previewMode, setPreviewMode] = useState(false);
+    const [isMobile, setIsMobile] = useState(null);
 
     useImperativeHandle(ref, () => ({
         triggerPreview() {
@@ -65,9 +66,9 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
     }));
 
     const memoizedScrollAnimation = useCallback(
-        (position, target, onUpdate) => {
+        (position, target, isMobile, onUpdate) => {
             if (position && target && onUpdate) {
-                scrollAnimation(position, target, onUpdate);
+                scrollAnimation(position, target, isMobile, onUpdate);
             }
         }, []
     )
@@ -78,6 +79,8 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
         });
 
         setViewerRef(viewer);
+        const isMobileOrTablet = mobileAndTabletCheck();
+        setIsMobile(isMobileOrTablet);
     
         const manager = await viewer.addPlugin(AssetManagerPlugin)
     
@@ -121,6 +124,12 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
         
         viewer.scene.activeCamera.setCameraOptions({ controlsEnabled: false });
 
+        if (isMobileOrTablet) { //initial
+            position.set(-16.7, 1.17, 11.7);
+            target.set(0, 1.37, 0);
+            props.contentRef.current.className = "mobile-or-tablet";
+        }
+
         window.scrollTo(0,0);
 
         let needsUpdate = true;
@@ -137,7 +146,7 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
             }
         })
 
-        memoizedScrollAnimation(position, target, onUpdate);
+        memoizedScrollAnimation(position, target, isMobileOrTablet, onUpdate);
         // Add some UI for tweak and testing.
         // const uiPlugin = await viewer.addPlugin(TweakpaneUiPlugin)
         // Add plugins to the UI to see their settings.
@@ -154,9 +163,9 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
         viewerRef.scene.activeCamera.setCameraOptions({ controlsEnabled: false });
         setPreviewMode(false);
         gsap.to(positionRef, {
-            x: 1.56,
-            y: 5.0,
-            z: 0.01,
+            x: !isMobile ? 1.56 : 9.36,
+            y: !isMobile ? 5.0 : 10.95,
+            z: !isMobile ? 0.01 : 0.09,
             scrollTrigger: {
                 trigger: '.display-section', // second section triggers animation
                 start: "top bottom", //section, viewport
@@ -170,9 +179,9 @@ const WebgiViewer = forwardRef((props, ref) => { // DONT NEED TO DO
             }
         });
         gsap.to(targetRef, {
-            x: -0.55,
-            y: 0.32,
-            z: 0.0,
+            x: !isMobile ? -0.55 : -1.62,
+            y: !isMobile ? 0.32 : 0.02,
+            z: !isMobile ? 0.0 : -0.06,
             scrollTrigger: {
                 trigger: '.display-section', // second section triggers animation
                 start: "top bottom", //section, viewport
